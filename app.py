@@ -301,6 +301,73 @@ def all_channel_stats():
 
 
 
+@app.route('/youtube_channel_views', methods=['GET', 'POST'])
+def youtube_channel_views():
+    stats_data = []
+    error = None
+
+    if request.method == 'POST':
+        keyword = request.form.get('keyword', '').strip()
+        if not keyword:
+            return render_template('youtube_channel_views.html', stats_data=[], error="Please enter a keyword")
+
+        try:
+            published_after = (datetime.now(pytz.UTC) - timedelta(days=7)).isoformat()
+            channel_views = defaultdict(int)
+
+            for channel_name, channel_id in channels.items():
+                search_response = youtube.search().list(
+                    q=keyword,
+                    part='snippet',
+                    type='video',
+                    channelId=channel_id,
+                    publishedAfter=published_after,
+                    maxResults=50,
+                    order='date'
+                ).execute()
+
+                video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
+
+                if video_ids:
+                    video_response = youtube.videos().list(
+                        part='snippet,statistics',
+                        id=','.join(video_ids)
+                    ).execute()
+
+                    for item in video_response.get('items', []):
+                        title = item['snippet']['title'].lower()
+                        if keyword.lower() in title:
+                            views = int(item['statistics'].get('viewCount', 0))
+                            channel_views[channel_name] += views
+
+            # Prepare data for UI and DB
+            results = sorted(channel_views.items(), key=lambda x: x[1], reverse=True)
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            for channel_name, views in results:
+                cursor.execute("""
+                    INSERT INTO youtube_channel_views (channel_name, keyword, total_views)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (channel_name, keyword)
+                    DO UPDATE SET total_views = EXCLUDED.total_views
+                """, (channel_name, keyword, views))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            stats_data = results
+
+        except Exception as e:
+            error = f"Error: {e}"
+
+    return render_template('youtube_channel_views.html', stats_data=stats_data, error=error)
+
+
+
+
+
+
 
 
 
