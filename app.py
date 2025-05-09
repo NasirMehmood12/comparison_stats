@@ -226,73 +226,80 @@ def all_channel_stats():
     except Exception as e:
         return f"Database error: {e}"
 
-@app.route('/youtube_tags', methods=['GET', 'POST'])
-def youtube_tags():
-    stats_data = []
-    error = None
+# @app.route('/youtube_tags', methods=['GET', 'POST'])
+# def youtube_tags():
+#     stats_data = []
+#     error = None
 
-    if request.method == 'POST':
-        keyword = request.form.get('keyword', '').strip()
-        if not keyword:
-            return render_template('youtube_tags.html', stats_data=[], error="Please enter a keyword")
+#     if request.method == 'POST':
+#         keyword = request.form.get('keyword', '').strip()
+#         if not keyword:
+#             return render_template('youtube_tags.html', stats_data=[], error="Please enter a keyword")
 
-        try:
-            # 1) build your YouTube search
-            published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
-            search_resp = youtube_key.search().list(
-                q=keyword,
-                part='snippet',
-                type='video',
-                order='relevance',
-                maxResults=25,
-                regionCode='PK',               # or 'IN' if you prefer
-                publishedAfter=published_after
-            ).execute()
+#         try:
+#             # 1) build your YouTube search
+#             published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
+#             search_resp = youtube_key.search().list(
+#                 q=keyword,
+#                 part='snippet',
+#                 type='video',
+#                 order='relevance',
+#                 maxResults=25,
+#                 regionCode='PK',               # or 'IN' if you prefer
+#                 publishedAfter=published_after
+#             ).execute()
 
-            # 2) collect only videos from your allowed channels
-            video_ids = []
-            for item in search_resp['items']:
-                cid = item['snippet']['channelId']
-                if cid in channel_ids:
-                    video_ids.append(item['id']['videoId'])
+#             # 2) collect only videos from your allowed channels
+#             video_ids = []
+#             for item in search_resp['items']:
+#                 cid = item['snippet']['channelId']
+#                 if cid in channel_ids:
+#                     video_ids.append(item['id']['videoId'])
 
-            # 3) if we found anything, fetch stats + snippet
-            videos = []
-            if video_ids:
-                vid_resp = youtube_key.videos().list(
-                    part='statistics,snippet',
-                    id=','.join(video_ids)
-                ).execute()
+#             # 3) if we found anything, fetch stats + snippet
+#             videos = []
+#             if video_ids:
+#                 vid_resp = youtube_key.videos().list(
+#                     part='statistics,snippet',
+#                     id=','.join(video_ids)
+#                 ).execute()
 
-                for itm in vid_resp['items']:
-                    title = itm['snippet']['title']
-                    cid   = itm['snippet']['channelId']
-                    views = int(itm['statistics'].get('viewCount', 0))
-                    ch    = id_to_name[cid]
-                    url   = f"https://www.youtube.com/watch?v={itm['id']}"
-                    videos.append((title, views, ch, url))
+#                 for itm in vid_resp['items']:
+#                     title = itm['snippet']['title']
+#                     cid   = itm['snippet']['channelId']
+#                     views = int(itm['statistics'].get('viewCount', 0))
+#                     ch    = id_to_name[cid]
+#                     url   = f"https://www.youtube.com/watch?v={itm['id']}"
+#                     videos.append((title, views, ch, url))
 
-                # 4) sort & save to DB
-                videos.sort(reverse=True)
-                conn   = get_db_connection()
-                cursor = conn.cursor()
-                for title, views, ch, url in videos:
-                    cursor.execute("""
-                        INSERT INTO youtube_tags (title, views, channel_name, link)
-                        VALUES (%s, %s, %s, %s)
-                        on conflict (title) do update set views = excluded.views
-                    """, (title, views, ch, url))
-                conn.commit()
-                cursor.close()
-                conn.close()
+#                 # 4) sort & save to DB
+#                 videos.sort(reverse=True)
+#                 conn   = get_db_connection()
+#                 cursor = conn.cursor()
+#                 for title, views, ch, url in videos:
+#                     cursor.execute("""
+#                         INSERT INTO youtube_tags (title, views, channel_name, link)
+#                         VALUES (%s, %s, %s, %s)
+#                         on conflict (title) do update set views = excluded.views
+#                     """, (title, views, ch, url))
+#                 conn.commit()
+#                 cursor.close()
+#                 conn.close()
 
-            # 5) pass results back to template
-            stats_data = videos
+#             # 5) pass results back to template
+#             stats_data = videos
 
-        except Exception as e:
-            error = f"Error: {e}"
+#         except Exception as e:
+#             error = f"Error: {e}"
 
-    return render_template('youtube_tags.html', stats_data=stats_data, error=error)
+#     return render_template('youtube_tags.html', stats_data=stats_data, error=error)
+
+
+
+
+
+
+
 
 
 
