@@ -301,7 +301,7 @@ def all_channel_stats():
 
 
 
-@app.route('/youtube_channel_views', methods=['GET', 'POST'])
+@app.route('/youtube_tags1', methods=['GET', 'POST'])
 def youtube_channel_views():
     stats_data = []
     error = None
@@ -347,9 +347,9 @@ def youtube_channel_views():
             cursor = conn.cursor()
             for channel_name, views in results:
                 cursor.execute("""
-                    INSERT INTO youtube_channel_views (channel_name, keyword, total_views)
+                    INSERT INTO youtube_tags1 (channel_name, keyword, views)
                     VALUES (%s, %s, %s)
-                    ON CONFLICT (channel_name, keyword)
+                    ON CONFLICT (channel_name)
                     DO UPDATE SET total_views = EXCLUDED.total_views
                 """, (channel_name, keyword, views))
             conn.commit()
@@ -361,7 +361,7 @@ def youtube_channel_views():
         except Exception as e:
             error = f"Error: {e}"
 
-    return render_template('youtube_channel_views.html', stats_data=stats_data, error=error)
+    return render_template('youtube_tags1.html', stats_data=stats_data, error=error)
 
 
 
