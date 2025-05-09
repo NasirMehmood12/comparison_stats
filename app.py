@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 
 # YouTube API
-API_KEY = 'AIzaSyCYqYWNXCwY__x6oaBTwC_XLCAOEOplRCs'
+API_KEY = 'AIzaSyC980m5FCsAdDzweTa5EOCYfLQhASL9DlE'
 youtube_key= build('youtube', 'v3', developerKey=API_KEY)
 
 
