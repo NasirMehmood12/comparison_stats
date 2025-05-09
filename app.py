@@ -302,79 +302,6 @@ def all_channel_stats():
 
 
 
-@app.route('/youtube_tags1', methods=['GET', 'POST'])
-def youtube_tags1():
-    stats_data = []
-    error = None
-
-    if request.method == 'POST':
-        keyword = request.form.get('keyword', '').strip()
-        if not keyword:
-            return render_template('youtube_tags1.html', stats_data=[], error="Please enter a keyword")
-
-        try:
-            published_after = (datetime.now(pytz.UTC) - timedelta(days=7)).isoformat()
-
-            videos = []
-
-            for channel_name, channel_id in channels.items():
-                search_resp = youtube.search().list(
-                    q=keyword,
-                    part='snippet',
-                    type='video',
-                    channelId=channel_id,
-                    publishedAfter=published_after,
-                    maxResults=25,
-                    order='date'
-                ).execute()
-
-                video_ids = [item['id']['videoId'] for item in search_resp.get('items', [])]
-
-                if video_ids:
-                    vid_resp = youtube.videos().list(
-                        part='statistics,snippet',
-                        id=','.join(video_ids)
-                    ).execute()
-
-                    for itm in vid_resp['items']:
-                        title = itm['snippet']['title'].lower()
-                        if keyword.lower() in title:
-                            views = int(itm['statistics'].get('viewCount', 0))
-                            # url = f"https://www.youtube.com/watch?v={itm['id']}"
-                            videos.append((views, channel_name))
-
-            # Sort by views
-            videos.sort(reverse=True)
-
-            # Save to DB
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            for views, ch in videos:
-                cursor.execute("""
-                    INSERT INTO youtube_tags1 (views, channel_name)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (link) DO UPDATE SET views = EXCLUDED.views
-                """, (views, ch))
-            conn.commit()
-            cursor.close()
-            conn.close()
-
-            stats_data = videos
-
-        except Exception as e:
-            error = f"Error: {e}"
-
-    return render_template('youtube_tags1.html', stats_data=stats_data, error=error)
-
-
-
-
-
-
-
-
-
-
 # @app.route('/youtube_tags1', methods=['GET', 'POST'])
 # def youtube_tags1():
 #     stats_data = []
@@ -386,61 +313,132 @@ def youtube_tags1():
 #             return render_template('youtube_tags1.html', stats_data=[], error="Please enter a keyword")
 
 #         try:
-#             # 1) build your YouTube search
-#             published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
-#             search_resp = youtube_key.search().list(
-#                 q=keyword,
-#                 part='snippet',
-#                 type='video',
-#                 order='relevance',
-#                 maxResults=25,
-#                 regionCode='PK',               # or 'IN' if you prefer
-#                 publishedAfter=published_after
-#             ).execute()
+#             published_after = (datetime.now(pytz.UTC) - timedelta(days=7)).isoformat()
 
-#             # 2) collect only videos from your allowed channels
-#             video_ids = []
-#             for item in search_resp['items']:
-#                 cid = item['snippet']['channelId']
-#                 if cid in channel_ids:
-#                     video_ids.append(item['id']['videoId'])
-
-#             # 3) if we found anything, fetch stats + snippet
 #             videos = []
-#             if video_ids:
-#                 vid_resp = youtube_key.videos().list(
-#                     part='statistics,snippet',
-#                     id=','.join(video_ids)
+
+#             for channel_name, channel_id in channels.items():
+#                 search_resp = youtube.search().list(
+#                     q=keyword,
+#                     part='snippet',
+#                     type='video',
+#                     channelId=channel_id,
+#                     publishedAfter=published_after,
+#                     maxResults=25,
+#                     order='date'
 #                 ).execute()
 
-#                 for itm in vid_resp['items']:
-#                     cid   = itm['snippet']['channelId']
-#                     views = int(itm['statistics'].get('viewCount', 0))
-#                     ch    = id_to_name[cid]
-#                     url   = f"https://www.youtube.com/watch?v={itm['id']}"
-#                     videos.append((views, ch, url))
+#                 video_ids = [item['id']['videoId'] for item in search_resp.get('items', [])]
 
-#                 # 4) sort & save to DB
-#                 videos.sort(reverse=True)
-#                 conn   = get_db_connection()
-#                 cursor = conn.cursor()
-#                 for views, ch, url in videos:
-#                     cursor.execute("""
-#                         INSERT INTO youtube_tags1 (views, channel_name, link)
-#                         VALUES (%s, %s, %s)
-#                         ON CONFLICT (link) DO UPDATE SET views = EXCLUDED.views
-#                     """, (views, ch, url))
-#                 conn.commit()
-#                 cursor.close()
-#                 conn.close()
+#                 if video_ids:
+#                     vid_resp = youtube.videos().list(
+#                         part='statistics,snippet',
+#                         id=','.join(video_ids)
+#                     ).execute()
 
-#             # 5) pass results back to template
+#                     for itm in vid_resp['items']:
+#                         title = itm['snippet']['title'].lower()
+#                         if keyword.lower() in title:
+#                             views = int(itm['statistics'].get('viewCount', 0))
+#                             # url = f"https://www.youtube.com/watch?v={itm['id']}"
+#                             videos.append((views, channel_name))
+
+#             # Sort by views
+#             videos.sort(reverse=True)
+
+#             # Save to DB
+#             conn = get_db_connection()
+#             cursor = conn.cursor()
+#             for views, ch in videos:
+#                 cursor.execute("""
+#                     INSERT INTO youtube_tags1 (views, channel_name)
+#                     VALUES (%s, %s, %s)
+#                     ON CONFLICT (link) DO UPDATE SET views = EXCLUDED.views
+#                 """, (views, ch))
+#             conn.commit()
+#             cursor.close()
+#             conn.close()
+
 #             stats_data = videos
 
 #         except Exception as e:
 #             error = f"Error: {e}"
 
 #     return render_template('youtube_tags1.html', stats_data=stats_data, error=error)
+
+
+
+
+
+
+
+
+
+@app.route('/youtube_tags', methods=['GET', 'POST'])
+def youtube_tags():
+    stats_data = []
+    error = None
+
+    if request.method == 'POST':
+        keyword = request.form.get('keyword', '').strip()
+        if not keyword:
+            return render_template('youtube_tags.html', stats_data=[], error="Please enter a keyword")
+
+        try:
+            published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
+
+            # Step 1: Search for relevant videos
+            search_response = youtube.search().list(
+                q=keyword,
+                part='snippet',
+                type='video',
+                order='relevance',
+                maxResults=25,
+                regionCode='IN',
+                publishedAfter=published_after
+            ).execute()
+
+            # Step 2: Extract video IDs
+            video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
+
+            videos = []
+            if video_ids:
+                # Step 3: Get video details
+                video_response = youtube.videos().list(
+                    part='statistics,snippet',
+                    id=','.join(video_ids)
+                ).execute()
+
+                for item in video_response.get('items', []):
+                    title = item['snippet']['title']
+                    channel = item['snippet']['channelTitle']
+                    views = int(item['statistics'].get('viewCount', 0))
+                    video_id = item['id']
+                    url = f"https://www.youtube.com/watch?v={video_id}"
+                    videos.append((views, title, channel, url))
+
+                # Step 4: Sort by views
+                videos.sort(reverse=True)
+
+                # Step 5: Save to database
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                for views, title, channel, url in videos:
+                    cursor.execute("""
+                        INSERT INTO youtube_tags (title, views, channel_name, link)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (title) DO UPDATE SET views = EXCLUDED.views
+                    """, (title, views, channel, url))
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+            stats_data = videos
+
+        except Exception as e:
+            error = f"Error: {e}"
+
+    return render_template('youtube_tags.html', stats_data=stats_data, error=error)
 
 
 
