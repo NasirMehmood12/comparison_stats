@@ -564,13 +564,11 @@ def search_top_videos():
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').strip()
         if not keyword:
-            return "Please enter a keyword.", 400
+            return render_template('search_top_videos.html', videos=None, keyword='', error="Please enter a keyword.")
 
-        # Get videos from last 3 days
         published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
 
         try:
-            # Step 1: Search for relevant videos
             search_response = youtube_key.search().list(
                 q=keyword,
                 part='snippet',
@@ -583,54 +581,31 @@ def search_top_videos():
 
             video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
             if not video_ids:
-                return f"No videos found for '{keyword}'.", 404
+                return render_template('search_top_videos.html', videos=None, keyword=keyword,
+                                        error=f"No videos found for '{keyword}'.")
 
-            # Step 2: Get video details and statistics
             video_response = youtube_key.videos().list(
                 part='statistics,snippet',
                 id=','.join(video_ids)
             ).execute()
 
-            # Step 3: Collect and sort by views
             videos = []
             for item in video_response.get('items', []):
                 title = item['snippet']['title']
                 channel = item['snippet']['channelTitle']
                 views = int(item['statistics'].get('viewCount', 0))
-                video_id = item['id']
-                url = f"https://www.youtube.com/watch?v={video_id}"
-                videos.append((views, title, channel, url))
+                url = f"https://www.youtube.com/watch?v={item['id']}"
+                videos.append((title, channel, views, url))
 
-            videos.sort(reverse=True)
+            videos.sort(key=lambda x: x[2], reverse=True)
 
-            # Step 4: Create CLI-style output
-            output = f"📺 Top videos for '{keyword}' (last 3 days):\n\n"
-            for idx, (views, title, channel, url) in enumerate(videos, 1):
-                output += f"{idx}. {title}\n   Channel: {channel}\n   Views: {views}\n   Link: {url}\n\n"
-
-            return render_template('search_top_videos.html',
-                       videos=videos,   # list of (title, channel, views, url)
-                       keyword=keyword,
-                       error=None)"
-
+            return render_template('search_top_videos.html', videos=videos, keyword=keyword, error=None)
         except Exception as e:
-            return f"Error during YouTube API call: {str(e)}", 500
+            return render_template('search_top_videos.html', videos=None, keyword=keyword,
+                                   error=f"Error during YouTube API call: {e}")
 
-    # GET method form
-    # return '''
-    #     <h2>Search Top YouTube Videos</h2>
-    #     <form method="POST">
-    #         <label>Keyword:</label>
-    #         <input name="keyword" required>
-    #         <input type="submit" value="Search">
-    #     </form>
-    # '''
-
-    return render_template('search_top_videos.html',
-                           videos=None,
-                           keyword='',
-                           error=your_error_message_or_None)
-
+    # GET
+    return render_template('search_top_videos.html', videos=None, keyword='', error=None)
 
 if __name__ == '__main__':
     app.run(debug=True)
