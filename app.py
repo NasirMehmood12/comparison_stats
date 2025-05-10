@@ -559,53 +559,143 @@ def download_excel(platform):
         return f"Download failed: {e}"
 
 # ---------------- New Route: CLI-like YouTube Search ----------------
+# @app.route('/search_top_videos', methods=['GET', 'POST'])
+# def search_top_videos():
+#     if request.method == 'POST':
+#         keyword = request.form.get('keyword', '').strip()
+#         if not keyword:
+#             return render_template('search_top_videos.html', videos=None, keyword='', error="Please enter a keyword.")
+
+#         published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
+
+#         try:
+#             search_response = youtube_key.search().list(
+#                 q=keyword,
+#                 part='snippet',
+#                 type='video',
+#                 order='relevance',
+#                 maxResults=25,
+#                 regionCode='PK',
+#                 publishedAfter=published_after
+#             ).execute()
+
+#             video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
+#             if not video_ids:
+#                 return render_template('search_top_videos.html', videos=None, keyword=keyword,
+#                                         error=f"No videos found for '{keyword}'.")
+
+#             video_response = youtube_key.videos().list(
+#                 part='statistics,snippet',
+#                 id=','.join(video_ids)
+#             ).execute()
+
+#             videos = []
+#             for item in video_response.get('items', []):
+#                 title = item['snippet']['title']
+#                 channel = item['snippet']['channelTitle']
+#                 views = int(item['statistics'].get('viewCount', 0))
+#                 url = f"https://www.youtube.com/watch?v={item['id']}"
+#                 videos.append((title, channel, views, url))
+
+#             videos.sort(key=lambda x: x[2], reverse=True)
+
+#             return render_template('search_top_videos.html', videos=videos, keyword=keyword, error=None)
+#         except Exception as e:
+#             return render_template('search_top_videos.html', videos=None, keyword=keyword,
+#                                    error=f"Error during YouTube API call: {e}")
+
+#     # GET
+#     return render_template('search_top_videos.html', videos=None, keyword='', error=None)
+
+
+
+
+
+
+
+
+
+
 @app.route('/search_top_videos', methods=['GET', 'POST'])
 def search_top_videos():
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').strip()
-        if not keyword:
-            return render_template('search_top_videos.html', videos=None, keyword='', error="Please enter a keyword.")
+        start_date = request.form.get('start_date', '').strip()
+        end_date = request.form.get('end_date', '').strip()
 
-        published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
+        if not keyword:
+            return "Please enter a keyword.", 400
+
+        # Default to last 3 days if no date provided
+        try:
+            if start_date:
+                published_after = datetime.fromisoformat(start_date).astimezone(pytz.UTC).isoformat()
+            else:
+                published_after = (datetime.now(pytz.UTC) - timedelta(days=3)).isoformat()
+        except ValueError:
+            return "Invalid start date format.", 400
 
         try:
-            search_response = youtube_key.search().list(
-                q=keyword,
-                part='snippet',
-                type='video',
-                order='relevance',
-                maxResults=25,
-                regionCode='PK',
-                publishedAfter=published_after
-            ).execute()
+            search_params = {
+                'q': keyword,
+                'part': 'snippet',
+                'type': 'video',
+                'order': 'relevance',
+                'maxResults': 25,
+                'regionCode': 'PK',
+                'publishedAfter': published_after
+            }
 
-            video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
+            # Only add end date if provided
+            if end_date:
+                try:
+                    search_params['publishedBefore'] = datetime.fromisoformat(end_date).astimezone(pytz.UTC).isoformat()
+                except ValueError:
+                    return "Invalid end date format.", 400
+
+            search_response = youtube.search().list(**search_params).execute()
+
+            video_ids = [item['id']['videoId'] for item in search_response['items']]
             if not video_ids:
-                return render_template('search_top_videos.html', videos=None, keyword=keyword,
-                                        error=f"No videos found for '{keyword}'.")
+                return f"No videos found for '{keyword}'.", 404
 
-            video_response = youtube_key.videos().list(
+            video_response = youtube.videos().list(
                 part='statistics,snippet',
                 id=','.join(video_ids)
             ).execute()
 
             videos = []
-            for item in video_response.get('items', []):
+            for item in video_response['items']:
                 title = item['snippet']['title']
                 channel = item['snippet']['channelTitle']
                 views = int(item['statistics'].get('viewCount', 0))
-                url = f"https://www.youtube.com/watch?v={item['id']}"
-                videos.append((title, channel, views, url))
+                video_id = item['id']
+                url = f"https://www.youtube.com/watch?v={video_id}"
+                videos.append((views, title, channel, url))
 
-            videos.sort(key=lambda x: x[2], reverse=True)
+            videos.sort(reverse=True)
 
-            return render_template('search_top_videos.html', videos=videos, keyword=keyword, error=None)
+            return render_template('search_top_videos.html',
+                                   videos=videos,
+                                   keyword=keyword,
+                                   start_date=start_date,
+                                   end_date=end_date,
+                                   error=None)
+
         except Exception as e:
-            return render_template('search_top_videos.html', videos=None, keyword=keyword,
-                                   error=f"Error during YouTube API call: {e}")
+            return f"Error during YouTube API call: {str(e)}", 500
 
-    # GET
-    return render_template('search_top_videos.html', videos=None, keyword='', error=None)
+    # GET method
+    return render_template('search_top_videos.html',
+                           videos=None,
+                           keyword='',
+                           start_date='',
+                           end_date='',
+                           error=None)
+
+
+
+
 
 # ---------------- New Route: Keyword-based Channel Views ----------------
 @app.route('/keyword_views', methods=['GET', 'POST'])
