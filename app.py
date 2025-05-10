@@ -659,9 +659,9 @@ def search_top_videos():
             if not video_ids:
                 return f"No videos found for '{keyword}'.", 404
 
-           video_response = youtube_key.videos().list(
-                 part=['snippet', 'statistics'],
-                 id=','.join(video_ids)
+            video_response = youtube_key.videos().list(
+                part=['snippet', 'statistics'],
+                id=','.join(video_ids)
             ).execute()
 
             videos = []
