@@ -66,14 +66,45 @@
         <a href="/youtube" class="btn btn-danger mx-2" style="font-size: 1.1rem; font-weight: 563;">YouTube Stats</a>
     </div>
 
-    <form action="/search-top-videos" method="post" class="mb-4 text-center">
+<!--     <form action="/search-top-videos" method="post" class="mb-4 text-center">
         <input type="text"
                name="keyword"
                placeholder="Enter keyword"
                value="{{ keyword|default('') }}"
                class="form-control d-inline w-50">
         <button type="submit" class="btn btn-primary mt-2">Search</button>
-    </form>
+    </form> -->
+
+
+
+
+
+
+<form action="/search_top_videos" method="post" class="mb-4 text-center">
+    <input type="text"
+           name="keyword"
+           placeholder="Enter keyword"
+           value="{{ keyword|default('') }}"
+           class="form-control d-inline w-50">
+    
+    <!-- Date Range Filters -->
+    <div class="mt-2">
+        <label for="start_date" class="text-white me-2">Start Date:</label>
+        <input type="date" name="start_date" id="start_date" value="{{ start_date|default('') }}"
+               class="form-control d-inline w-auto mx-2">
+        <label for="end_date" class="text-white me-2">End Date:</label>
+        <input type="date" name="end_date" id="end_date" value="{{ end_date|default('') }}"
+               class="form-control d-inline w-auto mx-2">
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Search</button>
+</form>
+
+
+
+
+
+    
 
     <div class="table-container">
         {% if error %}
