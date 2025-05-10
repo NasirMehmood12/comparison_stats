@@ -664,15 +664,28 @@ def search_top_videos():
                 id=','.join(video_ids)
             ).execute()
 
+            # videos = []
+            # for item in video_response['items']:
+            #     title = item['snippet']['title']
+            #     channel = item['snippet']['channelTitle']
+            #     views = int(item['statistics'].get('viewCount', 0))
+            #     video_id = item['id']
+            #     url = f"https://www.youtube.com/watch?v={video_id}"
+            #     videos.append((views, title, channel, url))
+
             videos = []
             for item in video_response['items']:
                 title = item['snippet']['title']
                 channel = item['snippet']['channelTitle']
-                views = int(item['statistics'].get('viewCount', 0))
+                view_count_raw = item['statistics'].get('viewCount', 0)
+                try:
+                    views = f"{int(view_count_raw):,}"
+                except (ValueError, TypeError):
+                    views = "N/A"
                 video_id = item['id']
                 url = f"https://www.youtube.com/watch?v={video_id}"
                 videos.append((views, title, channel, url))
-
+                
             videos.sort(reverse=True)
 
             return render_template('search_top_videos.html',
