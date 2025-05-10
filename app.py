@@ -323,7 +323,7 @@ from collections import defaultdict
 app = Flask(__name__)
 
 # YouTube API
-API_KEY = 'AIzaSyCRul2SLtvZlC8fXHzk80O9-yzQJh19idY'
+API_KEY = 'AIzaSyAI9Nx_N8nuieDmiYtljqMawtwwQQQXeTA'
 youtube_key = build('youtube', 'v3', developerKey=API_KEY)
 
 # News channels dictionary
