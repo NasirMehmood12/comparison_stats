@@ -132,7 +132,7 @@
 
 
 
-
+<!-- 
 
 
 
@@ -259,5 +259,43 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+ -->
+
+
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Search Top YouTube Videos</title>
+</head>
+<body>
+    <h2>Search Top YouTube Videos</h2>
+    <form method="POST">
+        <label>Keyword:</label>
+        <input name="keyword" required><br><br>
+
+        <label>Start Date:</label>
+        <input type="date" name="start_date"><br><br>
+
+        <label>End Date:</label>
+        <input type="date" name="end_date"><br><br>
+
+        <input type="submit" value="Search">
+    </form>
+
+    {% if videos %}
+  <ul>
+    {% for view_count, title, channel, url in videos %}
+      <li>
+        <strong>{{ title }}</strong><br>
+        Channel: {{ channel }}<br>
+        Views: {{ view_count }}<br>
+        <a href="{{ url }}" target="_blank">Watch</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 </body>
 </html>
