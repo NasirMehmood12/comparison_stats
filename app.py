@@ -616,7 +616,7 @@ def download_excel(platform):
 
 
 
-@app.route('/search_top_videos', methods=['GET', 'POST'])
+@app.route('/search-top-videos', methods=['GET', 'POST'])
 def search_top_videos():
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').strip()
