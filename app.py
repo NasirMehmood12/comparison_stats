@@ -559,7 +559,7 @@ def download_excel(platform):
         return f"Download failed: {e}"
 
 # ---------------- New Route: CLI-like YouTube Search ----------------
-@app.route('/search-top-videos', methods=['GET', 'POST'])
+@app.route('/search_top_videos', methods=['GET', 'POST'])
 def search_top_videos():
     if request.method == 'POST':
         keyword = request.form.get('keyword', '').strip()
@@ -606,6 +606,51 @@ def search_top_videos():
 
     # GET
     return render_template('search_top_videos.html', videos=None, keyword='', error=None)
+
+# ---------------- New Route: Keyword-based Channel Views ----------------
+@app.route('/keyword_views', methods=['GET', 'POST'])
+def keyword_views():
+    if request.method == 'POST':
+        keyword = request.form.get('keyword', '').strip()
+        if not keyword:
+            return render_template('keyword_views.html', channel_views=None, keyword='', error="Please enter a keyword.")
+
+        published_after = (datetime.now(pytz.UTC) - timedelta(days=7)).isoformat()
+        channel_views = defaultdict(int)
+
+        for channel_name, channel_id in channels_to_check.items():
+            try:
+                search_response = youtube_key.search().list(
+                    q=keyword,
+                    part='snippet',
+                    type='video',
+                    channelId=channel_id,
+                    publishedAfter=published_after,
+                    maxResults=50,
+                    order='date'
+                ).execute()
+
+                video_ids = [item['id']['videoId'] for item in search_response.get('items', [])]
+                if video_ids:
+                    video_response = youtube_key.videos().list(
+                        part='snippet,statistics',
+                        id=','.join(video_ids)
+                    ).execute()
+
+                    for item in video_response.get('items', []):
+                        title = item['snippet']['title'].lower()
+                        if keyword.lower() in title:
+                            views = int(item['statistics'].get('viewCount', 0))
+                            channel_views[channel_name] += views
+            except Exception as e:
+                print(f"Error processing channel {channel_name}: {e}")
+
+        # sort and render
+        sorted_views = sorted(channel_views.items(), key=lambda x: x[1], reverse=True)
+        return render_template('keyword_views.html', channel_views=sorted_views, keyword=keyword, error=None)
+
+    # GET
+    return render_template('keyword_views.html', channel_views=None, keyword='', error=None)
 
 if __name__ == '__main__':
     app.run(debug=True)
