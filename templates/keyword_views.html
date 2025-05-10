@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Keyword-based Channel Views</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(
+                90deg,
+                rgba(232, 39, 39, 1) 0%,
+                rgba(0, 0, 0, 1) 100%
+            );
+            padding: 2rem;
+        }
+        h1 {
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #fff;
+        }
+        .table-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .nav-links {
+            text-align: center;
+            margin: 1.5rem 0;
+        }
+        .btn-nav {
+            font-size: 1.1rem;
+            font-weight: 563;
+        }
+        .mt-2 {
+            margin-top: .5rem !important;
+            margin-bottom: .8rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg"
+             alt="YouTube Logo"
+             width="90" height="90"
+             style="vertical-align: middle; margin-right: 5px; margin-bottom: 7px;">
+        YouTube Channel Views by Keyword
+    </h1>
+
+    <div class="nav-links">
+        <a href="/facebook"     class="btn btn-primary btn-nav mx-2">Facebook Stats</a>
+        <a href="/instagram"    class="btn btn-nav mx-2"
+           style="background-color: #E1306C; color: white;">Instagram Stats</a>
+        <a href="/youtube"      class="btn btn-danger btn-nav mx-2">YouTube Stats</a>
+        <a href="/search-top-videos"
+           class="btn btn-success btn-nav mx-2">Search YouTube</a>
+        <a href="/keyword-views"
+           class="btn btn-warning btn-nav mx-2" style="color: white;">Keyword Views</a>
+    </div>
+
+    <form action="/keyword-views" method="post" class="mb-4 text-center">
+        <input type="text"
+               name="keyword"
+               placeholder="Enter keyword"
+               value="{{ keyword|default('') }}"
+               class="form-control d-inline w-50">
+        <button type="submit" class="btn btn-primary mt-2">Search</button>
+    </form>
+
+    <div class="table-container">
+        {% if error %}
+            <div class="alert alert-warning text-center">{{ error }}</div>
+        {% elif channel_views %}
+            <table class="table table-bordered table-hover table-striped shadow bg-white">
+                <thead style="background-color: #E0A6AF; color: white;">
+                    <tr>
+                        <th>Channel</th>
+                        <th>Views (last 7 days)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for channel, views in channel_views %}
+                    <tr>
+                        <td>{{ channel }}</td>
+                        <td>{{ "{:,}".format(views) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
