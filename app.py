@@ -653,7 +653,7 @@ def search_top_videos():
                 except ValueError:
                     return "Invalid end date format.", 400
 
-            search_response = youtube.search().list(**search_params).execute()
+            search_response = youtube_key.search().list(**search_params).execute()
 
             video_ids = [item['id']['videoId'] for item in search_response['items']]
             if not video_ids:
